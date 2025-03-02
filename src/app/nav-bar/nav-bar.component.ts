@@ -13,6 +13,7 @@ import {CommonModule} from '@angular/common';
       <span>Integrations Sprints</span>
       <span class="spacer"></span>
       <button mat-button (click)="navigateToHome()">Home</button>
+      <button mat-button (click)="navigateToMovies()">Movies</button>
       <div *ngFor="let topic of topics">
 
             <button mat-button (click)="navigateTo(topic)">{{ topic }}</button>
@@ -50,5 +51,9 @@ export class NavBarComponent implements OnInit {
 
   navigateToHome(): void {
     this.router.navigate(['/']);  // Assuming '/' is the route for the topic entry page
+  }
+
+  navigateToMovies(): void {
+    this.router.navigate(['/movies']);
   }
 }

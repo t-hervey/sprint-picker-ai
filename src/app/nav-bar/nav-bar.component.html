@@ -1,6 +1,8 @@
 <mat-toolbar color="primary">
   <span>Topic App</span>
   <span class="spacer"></span>
+  <button mat-button routerLink="/">Home</button>
+  <button mat-button routerLink="/movies">Movies</button>
   <ul *ngFor="let topic of topics">
     <li>
       <button mat-button (click)="navigateTo(topic)">{{ topic }}</button>
