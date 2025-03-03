@@ -2,12 +2,18 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import {FormsModule} from '@angular/forms';
+import {MatInputModule} from '@angular/material/input';
+import {MatButtonModule} from '@angular/material/button';
 
 @Component({
   selector: 'app-create-topic',
+  standalone: true,
   templateUrl: './create-topic.component.html',
+  styleUrls: ['./create-topic.component.css'],
   imports: [
-    FormsModule
+    FormsModule,
+    MatInputModule,
+    MatButtonModule,
   ]
 })
 export class CreateTopicComponent {

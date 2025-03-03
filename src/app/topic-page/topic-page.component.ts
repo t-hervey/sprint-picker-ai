@@ -25,8 +25,11 @@ export class TopicPageComponent implements OnInit {
   constructor(private route: ActivatedRoute, private topicService: TopicService) { }
 
   ngOnInit() {
-    this.topicName = this.route.snapshot.paramMap.get('name') || 'Default';
-    this.posts = this.topicService.getPosts(this.topicName);
+    this.route.paramMap.subscribe(params => {
+      const topic = params.get('name') || 'Default';
+      this.topicName = topic;
+      this.posts = this.topicService.getPosts(topic);
+    });
   }
 
   addPost() {

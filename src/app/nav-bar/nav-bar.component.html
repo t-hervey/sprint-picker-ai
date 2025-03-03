@@ -1,11 +1,14 @@
 <mat-toolbar color="primary">
-  <span>Topic App</span>
+  <span>Integrations Sprints</span>
   <span class="spacer"></span>
-  <button mat-button routerLink="/">Home</button>
-  <button mat-button routerLink="/movies">Movies</button>
-  <ul *ngFor="let topic of topics">
-    <li>
-      <button mat-button (click)="navigateTo(topic)">{{ topic }}</button>
-    </li>
-  </ul>
+  <button mat-button (click)="navigateToHome()">Home</button>
+  <button mat-button (click)="navigateToMovies()">Movies</button>
+  <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="More options">
+    <mat-icon>more_vert</mat-icon>
+  </button>
+  <mat-menu #menu="matMenu">
+    <ng-container *ngFor="let topic of topics">
+      <button mat-menu-item (click)="navigateTo(topic)">{{ topic }}</button>
+    </ng-container>
+  </mat-menu>
 </mat-toolbar>

@@ -2,30 +2,23 @@
 import { Component, OnInit } from '@angular/core';
 import { TopicService } from '../topic.service';
 import { Router } from '@angular/router';
-import {MatToolbar} from '@angular/material/toolbar';
-import {MatButton} from '@angular/material/button';
+import {MatToolbar, MatToolbarModule} from '@angular/material/toolbar';
+import {MatButton, MatButtonModule} from '@angular/material/button';
 import {CommonModule} from '@angular/common';
+import { MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
+import { MatIconModule} from '@angular/material/icon';
 
 @Component({
   selector: 'app-nav-bar',
-  template : `
-    <mat-toolbar color="primary">
-      <span>Integrations Sprints</span>
-      <span class="spacer"></span>
-      <button mat-button (click)="navigateToHome()">Home</button>
-      <button mat-button (click)="navigateToMovies()">Movies</button>
-      <div *ngFor="let topic of topics">
-
-            <button mat-button (click)="navigateTo(topic)">{{ topic }}</button>
-
-      </div>
-    </mat-toolbar>
-
-  `,
+  standalone: true,
+  templateUrl: './nav-bar.component.html',
   imports: [
-    MatToolbar,
-    MatButton,
-    CommonModule
+    MatToolbarModule,
+    MatButtonModule,
+    CommonModule,
+    MatMenuModule,
+    MatIconModule,
+    MatMenuTrigger
   ],
   styles: [`
     .spacer {
