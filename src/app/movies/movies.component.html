@@ -1,1 +1,34 @@
-<p>movies works!</p>
+<h2>Movies</h2>
+
+<!-- Letter Picker -->
+<div class="letters">
+  <button mat-flat-button *ngFor="let letter of letters" (click)="filterByLetter(letter)">
+    {{ letter }}
+  </button>
+</div>
+
+<div class="button-bar">
+<button mat-flat-button color="primary" (click)="celebrateTopMovie()">Select Winner</button>
+<button mat-flat-button color="accent" (click)="clearVotes()">Clear Votes</button>
+</div>
+<!-- Movies Grid -->
+<div class="movies-grid">
+  <div class="movie-card" *ngFor="let movie of filteredMovies">
+    <h3>{{ movie.Series_Title }}</h3>
+    <img [src]="movie.Poster_Link" alt="Poster" />
+    <p>Votes: {{ voteCounts[movie.Series_Title] || 0 }}</p>
+    <button mat-flat-button (click)="vote(movie.Series_Title)">Vote</button>
+  </div>
+</div>
+
+<!-- Celebration overlay -->
+<div class="celebration-overlay" *ngIf="showCelebration">
+  <div class="celebration-content">
+    <h2>Congratulations to {{ topMovie?.Series_Title }}!</h2>
+    <p>It has {{ topMovie ? (voteCounts[topMovie.Series_Title] || 0) : 0 }} votes.</p>
+    <button mat-flat-button color="accent" (click)="closeCelebration()">Close</button>
+  </div>
+</div>
+
+<!-- Confetti canvas (placed after the overlay so it renders on top) -->
+<canvas #confettiCanvas class="confetti-canvas"></canvas>
