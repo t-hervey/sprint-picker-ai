@@ -1,9 +1,8 @@
-// topic-page.component.ts
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { TopicService } from '../topic.service';
-import {FormsModule} from '@angular/forms';
-import {CommonModule} from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 
 interface Post {
   url: string;
@@ -11,7 +10,7 @@ interface Post {
 
 @Component({
   selector: 'app-topic-page',
-  templateUrl : './topic-page.component.html',
+  templateUrl: './topic-page.component.html',
   imports: [
     FormsModule, CommonModule
   ],
@@ -28,14 +27,19 @@ export class TopicPageComponent implements OnInit {
     this.route.paramMap.subscribe(params => {
       const topic = params.get('name') || 'Default';
       this.topicName = topic;
-      this.posts = this.topicService.getPosts(topic);
+      this.topicService.getPosts(topic).subscribe(posts => {
+        this.posts = posts;
+      });
     });
   }
 
   addPost() {
     if (this.newPostUrl.trim()) {
-      this.topicService.addPost(this.topicName, { url: this.newPostUrl });
-      this.posts = this.topicService.getPosts(this.topicName);
+      this.topicService.addPost(this.topicName, { url: this.newPostUrl }).subscribe(() => {
+        this.topicService.getPosts(this.topicName).subscribe(posts => {
+          this.posts = posts;
+        });
+      });
       this.newPostUrl = '';
     }
   }
