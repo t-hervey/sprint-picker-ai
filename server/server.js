@@ -110,9 +110,17 @@ app.post('/api/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    // Create a user object without the password
+    const safeUser = {
+      _id: user._id,
+      username: user.username
+    };
+
     // Set a session cookie; expires with the browser
     res.cookie('userId', String(user._id), { httpOnly: true });
-    res.json({ message: 'Login successful' });
+    res.json({ message: 'Login successful',
+      user: safeUser });
   } catch (err) {
     res.status(500).json({ error: 'Login failed' });
   }
