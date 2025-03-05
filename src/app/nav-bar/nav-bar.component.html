@@ -1,6 +1,7 @@
 <mat-toolbar color="primary">
   <span>Integrations Sprints</span>
   <span class="spacer"></span>
+  <button mat-button (click)="openLoginDialog()">Login</button>
   <button mat-button (click)="navigateToHome()">Home</button>
   <button mat-button (click)="navigateToMovies()">Movies</button>
   <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="More options">

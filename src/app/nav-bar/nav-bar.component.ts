@@ -7,6 +7,8 @@ import {MatButton, MatButtonModule} from '@angular/material/button';
 import {CommonModule} from '@angular/common';
 import { MatMenuModule, MatMenuTrigger} from '@angular/material/menu';
 import { MatIconModule} from '@angular/material/icon';
+import { LoginComponent } from '../login/login.component';
+import {MatDialog} from '@angular/material/dialog';
 
 @Component({
   selector: 'app-nav-bar',
@@ -29,7 +31,7 @@ import { MatIconModule} from '@angular/material/icon';
 export class NavBarComponent implements OnInit {
   topics: string[] = [];
 
-  constructor(private topicService: TopicService, private router: Router) { }
+  constructor(private topicService: TopicService, private router: Router, private dialog: MatDialog) { }
 
   ngOnInit(): void {
     // Subscribe to the topics observable so that the nav menu updates when new topics are added.
@@ -48,5 +50,11 @@ export class NavBarComponent implements OnInit {
 
   navigateToMovies(): void {
     this.router.navigate(['/movies']);
+  }
+
+  openLoginDialog(): void {
+    this.dialog.open(LoginComponent, {
+      width: '300px'
+    });
   }
 }
