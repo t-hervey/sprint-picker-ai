@@ -1,12 +1,13 @@
 // movies.component.ts
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { MovieService } from '../movie.service';
 import { Movie } from '../models/movie.model';
 import { CommonModule } from '@angular/common';
 import confetti from 'canvas-confetti';
 import { MatButtonModule } from '@angular/material/button';
-import { MovieVoteService } from '../movie-vote.service';
+import {MovieVoteService} from '../movie-vote.service';
 import { UserAuthService } from '../user-auth.service';
+import {Subscription} from 'rxjs';
 
 @Component({
   selector: 'app-movies',
@@ -20,6 +21,8 @@ export class MoviesComponent implements OnInit {
   allMovies: Movie[] = [];
   filteredMovies: Movie[] = [];
   voteCounts: { [key: string]: number } = {};
+
+  private votesSubscription?: Subscription;
 
   // For the celebration overlay
   showCelebration = false;
@@ -42,6 +45,18 @@ export class MoviesComponent implements OnInit {
       // Load all votes at once
       this.loadAllVotes();
     });
+
+    // Subscribe to real-time vote count updates
+    this.votesSubscription = this.movieVoteService.voteCounts$.subscribe(counts => {
+      this.voteCounts = counts;
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Clean up subscription when component is destroyed
+    if (this.votesSubscription) {
+      this.votesSubscription.unsubscribe();
+    }
   }
 
   updateVoteCounts(): void {
@@ -79,13 +94,8 @@ export class MoviesComponent implements OnInit {
       return;
     }
 
+    // Just submit the vote - updates will come through socket
     this.movieVoteService.submitVote(movieId, 'up').subscribe({
-      next: () => {
-        // Update the vote count for this movie
-        this.movieVoteService.getVoteCount(movieId).subscribe(count => {
-          this.voteCounts[movieId] = count;
-        });
-      },
       error: error => console.error('Error voting:', error)
     });
   }

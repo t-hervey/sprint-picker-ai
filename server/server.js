@@ -1,4 +1,6 @@
 require('dotenv').config();
+const http = require('http');
+const socketIO = require('socket.io');
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
@@ -6,6 +8,15 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 3000;
 const cookieParser = require('cookie-parser');
+
+// Create HTTP server from Express app
+const server = http.createServer(app);
+const io = socketIO(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
 
 // Middleware
 app.use(express.json());
@@ -23,9 +34,18 @@ MongoClient.connect(mongoUrl, { useUnifiedTopology: true })
   .then(client => {
     console.log('Connected to MongoDB');
     db = client.db(dbName);
-    app.listen(port, () => console.log(`Server listening on port ${port}`));
+    server.listen(port, () => console.log(`Server listening on port ${port}`));
   })
   .catch(err => console.error(err));
+
+// Socket.io connection handler
+io.on('connection', (socket) => {
+  console.log('New client connected');
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
 
 // Endpoints
 
@@ -168,6 +188,16 @@ app.post('/api/votes', async (req, res) => {
         { upsert: true }
       );
 
+      // Get updated vote count after update
+      const updatedVote = await movieVotesCollection.findOne({ movieId });
+
+      // Broadcast to all connected clients
+      io.emit('vote-updated', {
+        movieId,
+        voteCount: updatedVote ? updatedVote.voteCount : 0
+      });
+
+
       res.json({ message: 'Vote updated successfully' });
     } else {
       // Create new vote
@@ -182,6 +212,15 @@ app.post('/api/votes', async (req, res) => {
         { $inc: { voteCount: voteIncrement } },
         { upsert: true }
       );
+
+      // Get updated vote count after insert
+      const updatedVote = await movieVotesCollection.findOne({ movieId });
+
+      // Broadcast to all connected clients
+      io.emit('vote-updated', {
+        movieId,
+        voteCount: updatedVote ? updatedVote.voteCount : 0
+      });
 
       res.json({ message: 'Vote recorded successfully' });
     }

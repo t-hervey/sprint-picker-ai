@@ -4,8 +4,9 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject, of } from 'rxjs';
 import { catchError, map, tap } from 'rxjs/operators';
 import { UserAuthService } from './user-auth.service';
+import { SocketService } from './socket.service';
 
-interface VoteCount {
+export interface VoteCount {
   upVotes: number;
   downVotes: number;
   total: number;
@@ -15,16 +16,30 @@ interface VoteCount {
   providedIn: 'root'
 })
 export class MovieVoteService {
-  private voteCountsSubject = new BehaviorSubject<Record<string, VoteCount>>({});
+  private voteCountsSubject = new BehaviorSubject<Record<string, number>>({});
   public voteCounts$ = this.voteCountsSubject.asObservable();
 
   constructor(
     private http: HttpClient,
-    private authService: UserAuthService
-  ) {}
+    private authService: UserAuthService,
+    private socketService: SocketService
+  ) {
+    // Initialize real-time updates
+    this.initializeRealTimeUpdates();
+  }
 
-  loadVotes(movieId: string): Observable<VoteCount> {
-    return this.http.get<VoteCount>(`/api/votes/${movieId}`).pipe(
+  private initializeRealTimeUpdates(): void {
+    this.socketService.onVoteUpdated().subscribe(update => {
+      const currentCounts = this.voteCountsSubject.value;
+      this.voteCountsSubject.next({
+        ...currentCounts,
+        [update.movieId]: update.voteCount
+      });
+    });
+  }
+
+  loadVotes(movieId: string): Observable<number> {
+    return this.http.get<number>(`/api/votes/${movieId}`).pipe(
       tap(votes => {
         const currentCounts = this.voteCountsSubject.value;
         this.voteCountsSubject.next({
@@ -33,7 +48,7 @@ export class MovieVoteService {
         });
       }),
       catchError(() => {
-        return of({ upVotes: 0, downVotes: 0, total: 0 });
+        return of(0);
       })
     );
   }
@@ -66,7 +81,7 @@ export class MovieVoteService {
     return this.voteCounts$.pipe(
       map(counts => {
         if (counts[movieId]) {
-          return counts[movieId].total;
+          return counts[movieId];
         }
         return 0; // Simply return 0 if no votes exist
       })
@@ -113,8 +128,8 @@ export class MovieVoteService {
   }
 
   // Add to MovieVoteService
-  getAllMovieVotes(): Observable<Record<string, VoteCount>> {
-    return this.http.get<Record<string, VoteCount>>('/api/votes/all').pipe(
+  getAllMovieVotes(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>('/api/votes/all').pipe(
       tap(allVotes => {
         // Update the voteCountsSubject with all votes at once
         this.voteCountsSubject.next(allVotes);
