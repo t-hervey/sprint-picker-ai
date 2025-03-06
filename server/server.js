@@ -206,3 +206,41 @@ app.get('/api/votes/:movieId/user', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve vote' });
   }
 });
+
+// Get votes for all movies at once
+app.get('/api/votes/all', async (req, res) => {
+  try {
+    const votesCollection = db.collection('votes');
+
+    // Get all votes
+    const votes = await votesCollection.find().toArray();
+
+    // Group votes by movie
+    const movieVoteTotals = {};
+
+    votes.forEach(vote => {
+      const { movieId, vote: voteType } = vote;
+
+      if (!movieVoteTotals[movieId]) {
+        movieVoteTotals[movieId] = {
+          upVotes: 0,
+          downVotes: 0,
+          total: 0
+        };
+      }
+
+      if (voteType === 'up') {
+        movieVoteTotals[movieId].upVotes++;
+        movieVoteTotals[movieId].total++;
+      } else if (voteType === 'down') {
+        movieVoteTotals[movieId].downVotes++;
+        movieVoteTotals[movieId].total--;
+      }
+    });
+
+    res.json(movieVoteTotals);
+  } catch (err) {
+    console.error('Error getting all votes:', err);
+    res.status(500).json({ error: 'Failed to retrieve all votes' });
+  }
+});

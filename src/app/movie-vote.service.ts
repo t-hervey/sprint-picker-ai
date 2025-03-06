@@ -114,4 +114,18 @@ export class MovieVoteService {
       });
     });
   }
+
+  // Add to MovieVoteService
+  getAllMovieVotes(): Observable<Record<string, VoteCount>> {
+    return this.http.get<Record<string, VoteCount>>('/api/votes/all').pipe(
+      tap(allVotes => {
+        // Update the voteCountsSubject with all votes at once
+        this.voteCountsSubject.next(allVotes);
+      }),
+      catchError(error => {
+        console.error('Error fetching all votes:', error);
+        return of({});
+      })
+    );
+  }
 }

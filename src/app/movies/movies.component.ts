@@ -39,19 +39,13 @@ export class MoviesComponent implements OnInit {
       this.allMovies = movies;
       this.filteredMovies = movies;
 
-      // Preload votes for all movies with a single call
-      if (movies.length > 0) {
-        const movieIds = movies.map(movie => movie.Series_Title);
-        movieIds.forEach(id => this.movieVoteService.loadVotes(id).subscribe());
-      }
+      // Load all votes at once
+      this.loadAllVotes();
     });
   }
 
   updateVoteCounts(): void {
-    const movieIds = this.allMovies.map(movie => movie.Series_Title);
-    this.movieVoteService.getVoteCountsForMovies(movieIds).subscribe(counts => {
-      this.voteCounts = counts;
-    });
+    this.loadAllVotes();
   }
 
   ngAfterViewInit(): void {
@@ -152,5 +146,16 @@ export class MoviesComponent implements OnInit {
 
   closeCelebration() {
     this.showCelebration = false;
+  }
+
+  loadAllVotes(): void {
+    this.movieVoteService.getAllMovieVotes().subscribe(voteCounts => {
+      // Extract the total for each movie
+      const totals: Record<string, number> = {};
+      Object.entries(voteCounts).forEach(([movieId, counts]) => {
+        totals[movieId] = counts.total;
+      });
+      this.voteCounts = totals;
+    });
   }
 }
