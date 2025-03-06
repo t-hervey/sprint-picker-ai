@@ -21,6 +21,7 @@ export class MoviesComponent implements OnInit {
   allMovies: Movie[] = [];
   filteredMovies: Movie[] = [];
   voteCounts: { [key: string]: number } = {};
+  recentlyUpdated: { [key: string]: boolean } = {};
 
   private votesSubscription?: Subscription;
 
@@ -48,7 +49,26 @@ export class MoviesComponent implements OnInit {
 
     // Subscribe to real-time vote count updates
     this.votesSubscription = this.movieVoteService.voteCounts$.subscribe(counts => {
+      // Find which movie was updated
+      const updatedMovies = Object.keys(counts).filter(movieId =>
+        this.voteCounts[movieId] !== counts[movieId]
+      );
+
+      // Update vote counts
       this.voteCounts = counts;
+
+      // Mark the updated movies for animation
+      updatedMovies.forEach(movieId => {
+        // Only animate if it wasn't our own vote
+        if (movieId) {
+          this.recentlyUpdated[movieId] = true;
+
+          // Remove the animation class after animation completes
+          setTimeout(() => {
+            this.recentlyUpdated[movieId] = false;
+          }, 2250); // Match animation duration
+        }
+      });
     });
   }
 

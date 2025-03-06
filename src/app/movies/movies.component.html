@@ -13,7 +13,9 @@
 </div>
 <!-- Movies Grid -->
 <div class="movies-grid">
-  <div class="movie-card" *ngFor="let movie of filteredMovies">
+  <div class="movie-card"
+       *ngFor="let movie of filteredMovies"
+       [class.pulse]="recentlyUpdated[movie.Series_Title]">
     <h3>{{ movie.Series_Title }}</h3>
     <img [src]="movie.Poster_Link" alt="Poster" />
     <p>Votes: {{ voteCounts[movie.Series_Title] || 0 }}</p>
