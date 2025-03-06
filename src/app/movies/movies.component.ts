@@ -98,8 +98,8 @@ export class MoviesComponent implements OnInit {
   celebrateTopMovie(): void {
     if (!this.filteredMovies.length) return;
 
-    const filteredMovieIds = this.filteredMovies.map(movie => movie.Series_Title);
-    this.movieVoteService.getVoteCountsForMovies(filteredMovieIds).subscribe(counts => {
+    // Use the direct counts from movie_votes collection
+    this.movieVoteService.getAllMovieVoteCounts().subscribe(counts => {
       let maxVotes = 0;
       let best: Movie | null = null;
 
