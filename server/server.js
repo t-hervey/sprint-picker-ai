@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
@@ -12,7 +13,8 @@ app.use(cors());
 app.use(cookieParser());
 
 // MongoDB connection settings
-const mongoUrl = 'mongodb+srv://dev:HfNdhMAnAGncH71V@sprintnamer.rgdi4.mongodb.net/?retryWrites=true&w=majority&appName=SprintNamer';
+const dbConfig = require('./config/database');
+const mongoUrl = dbConfig.url;
 const dbName = 'topicAppDB';
 let db;
 
