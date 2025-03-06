@@ -5,6 +5,8 @@ import { Movie } from '../models/movie.model';
 import { CommonModule } from '@angular/common';
 import confetti from 'canvas-confetti';
 import { MatButtonModule } from '@angular/material/button';
+import { MovieVoteService } from '../movie-vote.service';
+import { UserAuthService } from '../user-auth.service';
 
 @Component({
   selector: 'app-movies',
@@ -26,16 +28,30 @@ export class MoviesComponent implements OnInit {
   @ViewChild('confettiCanvas') confettiCanvas!: ElementRef<HTMLCanvasElement>;
   private confettiInstance: any;
 
-  constructor(private movieService: MovieService) {}
+  constructor(
+    private movieService: MovieService,
+    private movieVoteService: MovieVoteService,
+    private authService: UserAuthService
+  ) {}
 
   ngOnInit(): void {
-    // Subscribe to movies from the service
     this.movieService.getMovies$().subscribe((movies) => {
       this.allMovies = movies;
-      this.filteredMovies = movies; // default shows all
+      this.filteredMovies = movies;
+
+      // Preload votes for all movies with a single call
+      if (movies.length > 0) {
+        const movieIds = movies.map(movie => movie.Series_Title);
+        movieIds.forEach(id => this.movieVoteService.loadVotes(id).subscribe());
+      }
     });
-    const storedVotes = localStorage.getItem('voteCounts');
-    this.voteCounts = storedVotes ? JSON.parse(storedVotes) : {};
+  }
+
+  updateVoteCounts(): void {
+    const movieIds = this.allMovies.map(movie => movie.Series_Title);
+    this.movieVoteService.getVoteCountsForMovies(movieIds).subscribe(counts => {
+      this.voteCounts = counts;
+    });
   }
 
   ngAfterViewInit(): void {
@@ -63,13 +79,21 @@ export class MoviesComponent implements OnInit {
     return title;
   }
 
-  vote(movieTitle: string) {
-    if (this.voteCounts[movieTitle]) {
-      this.voteCounts[movieTitle]++;
-    } else {
-      this.voteCounts[movieTitle] = 1;
+  vote(movieId: string): void {
+    if (!this.authService.isLoggedIn()) {
+      alert('Please log in to vote');
+      return;
     }
-    localStorage.setItem('voteCounts', JSON.stringify(this.voteCounts));
+
+    this.movieVoteService.submitVote(movieId, 'up').subscribe({
+      next: () => {
+        // Update the vote count for this movie
+        this.movieVoteService.getVoteTotals(movieId).subscribe(total => {
+          this.voteCounts[movieId] = total;
+        });
+      },
+      error: error => console.error('Error voting:', error)
+    });
   }
 
   clearVotes(): void {
@@ -80,23 +104,27 @@ export class MoviesComponent implements OnInit {
   celebrateTopMovie(): void {
     if (!this.filteredMovies.length) return;
 
-    let maxVotes = 0;
-    let best: Movie | null = null;
-    for (const movie of this.filteredMovies) {
-      const votes = this.voteCounts[movie.Series_Title] || 0;
-      if (votes > maxVotes) {
-        maxVotes = votes;
-        best = movie;
-      }
-    }
+    const filteredMovieIds = this.filteredMovies.map(movie => movie.Series_Title);
+    this.movieVoteService.getVoteCountsForMovies(filteredMovieIds).subscribe(counts => {
+      let maxVotes = 0;
+      let best: Movie | null = null;
 
-    if (best) {
-      this.topMovie = best;
-      this.showCelebration = true;
-      this.launchConfetti();
-    } else {
-      alert('No votes yet!');
-    }
+      for (const movie of this.filteredMovies) {
+        const votes = counts[movie.Series_Title] || 0;
+        if (votes > maxVotes) {
+          maxVotes = votes;
+          best = movie;
+        }
+      }
+
+      if (best && maxVotes > 0) {
+        this.topMovie = best;
+        this.showCelebration = true;
+        this.launchConfetti();
+      } else {
+        alert('No votes yet!');
+      }
+    });
   }
 
   launchConfetti(): void {

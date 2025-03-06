@@ -127,3 +127,82 @@ app.post('/api/login', async (req, res) => {
     res.status(500).json({ error: 'Login failed' });
   }
 });
+
+// Vote endpoint - Create or update a vote
+app.post('/api/votes', async (req, res) => {
+  try {
+    const { movieId, vote } = req.body;
+    const userId = req.cookies.userId;
+
+    if (!userId || !movieId || !vote) {
+      return res.status(400).json({ error: 'User ID, movie ID, and vote are required' });
+    }
+
+    const votesCollection = db.collection('votes');
+
+    // Check if the user has already voted for this movie
+    const existingVote = await votesCollection.findOne({ userId, movieId });
+
+    if (existingVote) {
+      // Update existing vote
+      await votesCollection.updateOne(
+        { userId, movieId },
+        { $set: { vote } }
+      );
+      res.json({ message: 'Vote updated successfully' });
+    } else {
+      // Create new vote
+      await votesCollection.insertOne({ userId, movieId, vote });
+      res.json({ message: 'Vote recorded successfully' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to record vote' });
+  }
+});
+
+// Get votes for a movie
+app.get('/api/votes/:movieId', async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const votesCollection = db.collection('votes');
+
+    const votes = await votesCollection.find({ movieId }).toArray();
+
+    const upVotes = votes.filter(v => v.vote === 'up').length;
+    const downVotes = votes.filter(v => v.vote === 'down').length;
+
+    res.json({
+      upVotes,
+      downVotes,
+      total: upVotes - downVotes
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve votes' });
+  }
+});
+
+// Get current user's vote for a movie
+app.get('/api/votes/:movieId/user', async (req, res) => {
+  try {
+    const { movieId } = req.params;
+    const userId = req.cookies.userId;
+
+    if (!userId) {
+      return res.json({ hasVoted: false });
+    }
+
+    const votesCollection = db.collection('votes');
+    const vote = await votesCollection.findOne({ userId, movieId });
+
+    if (!vote) {
+      return res.json({ hasVoted: false });
+    }
+
+    res.json({
+      hasVoted: true,
+      vote: vote.vote
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to retrieve vote' });
+  }
+});
