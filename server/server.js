@@ -139,45 +139,74 @@ app.post('/api/votes', async (req, res) => {
     }
 
     const votesCollection = db.collection('votes');
+    const movieVotesCollection = db.collection('movie_votes');
 
     // Check if the user has already voted for this movie
     const existingVote = await votesCollection.findOne({ userId, movieId });
 
+    // Handle vote logic
     if (existingVote) {
+      if (existingVote.vote === vote) {
+        // No change needed if voting the same way
+        return res.json({ message: 'Already voted this way' });
+      }
+
       // Update existing vote
       await votesCollection.updateOne(
         { userId, movieId },
         { $set: { vote } }
       );
+
+      // If changing from down to up, add 2 to vote count (remove down, add up)
+      // If changing from up to down, subtract 2 from vote count (remove up, add down)
+      const voteIncrement = existingVote.vote === 'down' && vote === 'up' ? 2 : -2;
+
+      // Update movie_votes collection
+      await movieVotesCollection.updateOne(
+        { movieId },
+        { $inc: { voteCount: voteIncrement } },
+        { upsert: true }
+      );
+
       res.json({ message: 'Vote updated successfully' });
     } else {
       // Create new vote
       await votesCollection.insertOne({ userId, movieId, vote });
+
+      // Increment or decrement vote count
+      const voteIncrement = vote === 'up' ? 1 : -1;
+
+      // Update movie_votes collection
+      await movieVotesCollection.updateOne(
+        { movieId },
+        { $inc: { voteCount: voteIncrement } },
+        { upsert: true }
+      );
+
       res.json({ message: 'Vote recorded successfully' });
     }
   } catch (err) {
+    console.error('Error recording vote:', err);
     res.status(500).json({ error: 'Failed to record vote' });
   }
 });
 
-// Get votes for a movie
-app.get('/api/votes/:movieId', async (req, res) => {
+// New endpoint to get vote count for a single movie directly from movie_votes
+app.get('/api/votes/:movieId/count', async (req, res) => {
   try {
     const { movieId } = req.params;
-    const votesCollection = db.collection('votes');
+    const movieVotesCollection = db.collection('movie_votes');
 
-    const votes = await votesCollection.find({ movieId }).toArray();
+    const movieVote = await movieVotesCollection.findOne({ movieId });
 
-    const upVotes = votes.filter(v => v.vote === 'up').length;
-    const downVotes = votes.filter(v => v.vote === 'down').length;
+    if (!movieVote) {
+      return res.json({ voteCount: 0 });
+    }
 
-    res.json({
-      upVotes,
-      downVotes,
-      total: upVotes - downVotes
-    });
+    res.json({ voteCount: movieVote.voteCount });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to retrieve votes' });
+    console.error('Error getting vote count:', err);
+    res.status(500).json({ error: 'Failed to retrieve vote count' });
   }
 });
 
@@ -208,39 +237,23 @@ app.get('/api/votes/:movieId/user', async (req, res) => {
 });
 
 // Get votes for all movies at once
-app.get('/api/votes/all', async (req, res) => {
+// Update the endpoint that gets all votes
+app.get('/api/votes/all/counts', async (req, res) => {
   try {
-    const votesCollection = db.collection('votes');
+    const movieVotesCollection = db.collection('movie_votes');
 
-    // Get all votes
-    const votes = await votesCollection.find().toArray();
+    // Get all movie vote counts
+    const movieVotes = await movieVotesCollection.find().toArray();
 
-    // Group votes by movie
-    const movieVoteTotals = {};
-
-    votes.forEach(vote => {
-      const { movieId, vote: voteType } = vote;
-
-      if (!movieVoteTotals[movieId]) {
-        movieVoteTotals[movieId] = {
-          upVotes: 0,
-          downVotes: 0,
-          total: 0
-        };
-      }
-
-      if (voteType === 'up') {
-        movieVoteTotals[movieId].upVotes++;
-        movieVoteTotals[movieId].total++;
-      } else if (voteType === 'down') {
-        movieVoteTotals[movieId].downVotes++;
-        movieVoteTotals[movieId].total--;
-      }
+    // Transform into the expected format
+    const voteCounts = {};
+    movieVotes.forEach(item => {
+      voteCounts[item.movieId] = item.voteCount;
     });
 
-    res.json(movieVoteTotals);
+    res.json(voteCounts);
   } catch (err) {
-    console.error('Error getting all votes:', err);
-    res.status(500).json({ error: 'Failed to retrieve all votes' });
+    console.error('Error getting all vote counts:', err);
+    res.status(500).json({ error: 'Failed to retrieve vote counts' });
   }
 });

@@ -55,9 +55,6 @@ export class MovieVoteService {
     }
 
     return this.http.post('/api/votes', { movieId, vote }).pipe(
-      tap(() => {
-        this.loadVotes(movieId).subscribe();
-      }),
       catchError(error => {
         console.error('Error submitting vote', error);
         return of({ error: 'Failed to submit vote' });
@@ -125,6 +122,24 @@ export class MovieVoteService {
       catchError(error => {
         console.error('Error fetching all votes:', error);
         return of({});
+      })
+    );
+  }
+
+  getAllMovieVoteCounts(): Observable<Record<string, number>> {
+    return this.http.get<Record<string, number>>('/api/votes/all/counts').pipe(
+      catchError(error => {
+        console.error('Error fetching all vote counts:', error);
+        return of({});
+      })
+    );
+  }
+
+  getVoteCount(movieId: string): Observable<number> {
+    return this.http.get<{voteCount: number}>(`/api/votes/${movieId}/count`).pipe(
+      map(response => response.voteCount),
+      catchError(() => {
+        return of(0);
       })
     );
   }

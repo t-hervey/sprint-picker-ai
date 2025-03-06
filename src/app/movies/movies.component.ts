@@ -82,8 +82,8 @@ export class MoviesComponent implements OnInit {
     this.movieVoteService.submitVote(movieId, 'up').subscribe({
       next: () => {
         // Update the vote count for this movie
-        this.movieVoteService.getVoteTotals(movieId).subscribe(total => {
-          this.voteCounts[movieId] = total;
+        this.movieVoteService.getVoteCount(movieId).subscribe(count => {
+          this.voteCounts[movieId] = count;
         });
       },
       error: error => console.error('Error voting:', error)
@@ -149,13 +149,8 @@ export class MoviesComponent implements OnInit {
   }
 
   loadAllVotes(): void {
-    this.movieVoteService.getAllMovieVotes().subscribe(voteCounts => {
-      // Extract the total for each movie
-      const totals: Record<string, number> = {};
-      Object.entries(voteCounts).forEach(([movieId, counts]) => {
-        totals[movieId] = counts.total;
-      });
-      this.voteCounts = totals;
+    this.movieVoteService.getAllMovieVoteCounts().subscribe(voteCounts => {
+      this.voteCounts = voteCounts;
     });
   }
 }
